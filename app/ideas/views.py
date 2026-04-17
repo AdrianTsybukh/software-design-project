@@ -1,3 +1,5 @@
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CategoryForm, CommentForm, IdeaForm
@@ -6,8 +8,7 @@ from .models import Category, Idea, Vote
 
 def idea_list_view(request):
     ideas = Idea.objects.all()
-    context = {"title": "Список ідей", "ideas": ideas}
-    return render(request, "ideas/idea_list.html", context=context)
+    return render(request, "ideas/idea_list.html", {"ideas": ideas})
 
 
 def idea_detail_view(request, idea_id: int):
@@ -15,70 +16,64 @@ def idea_detail_view(request, idea_id: int):
     comments = idea.comments.all().order_by("-created_at")
 
     if request.method == "POST" and "submit_comment" in request.POST:
+        if not request.user.is_authenticated:
+            return redirect("accounts:login")
+
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
             new_comment = comment_form.save(commit=False)
             new_comment.idea = idea
-
-            from django.contrib.auth import get_user_model
-
-            new_comment.author = get_user_model().objects.first()
-
+            new_comment.author = request.user
             new_comment.save()
             return redirect("idea_detail", idea_id=idea.id)
     else:
         comment_form = CommentForm()
 
-    upvotes = idea.votes.filter(value=Vote.Value.UPVOTE).count()
-    downvotes = idea.votes.filter(value=Vote.Value.DOWNVOTE).count()
-
     context = {
-        "title": idea.title,
         "idea": idea,
         "comments": comments,
         "comment_form": comment_form,
-        "upvotes": upvotes,
-        "downvotes": downvotes,
+        "upvotes": idea.votes.filter(value=1).count(),
+        "downvotes": idea.votes.filter(value=-1).count(),
     }
-    return render(request, "ideas/idea_detail.html", context=context)
+    return render(request, "ideas/idea_detail.html", context)
 
 
+@login_required
 def idea_vote_view(request, idea_id: int):
     if request.method == "POST":
         idea = get_object_or_404(Idea, id=idea_id)
         vote_value = int(request.POST.get("vote_value", 0))
 
-        from django.contrib.auth import get_user_model
-
-        user = get_user_model().objects.first()
-
-        if vote_value in dict(Vote.Value.choices):
+        if vote_value in [1, -1]:
             Vote.objects.update_or_create(
-                idea=idea, user=user, defaults={"value": vote_value}
+                idea=idea, user=request.user, defaults={"value": vote_value}
             )
-
     return redirect("idea_detail", idea_id=idea_id)
 
 
+@login_required
 def idea_create_view(request):
     if request.method == "POST":
         form = IdeaForm(request.POST)
         if form.is_valid():
             new_idea = form.save(commit=False)
-            from django.contrib.auth import get_user_model
-
-            new_idea.author = get_user_model().objects.first()
+            new_idea.author = request.user
             new_idea.save()
             return redirect("idea_list")
     else:
         form = IdeaForm()
+    return render(
+        request, "ideas/idea_form.html", {"form": form, "title": "Створення ідеї"}
+    )
 
-    context = {"title": "Створення ідеї", "form": form}
-    return render(request, "ideas/idea_form.html", context=context)
 
-
+@login_required
 def idea_update_view(request, idea_id: int):
     idea = get_object_or_404(Idea, id=idea_id)
+
+    if idea.author != request.user:
+        return HttpResponseForbidden("Ви не можете редагувати чужі ідеї.")
 
     if request.method == "POST":
         form = IdeaForm(request.POST, instance=idea)
@@ -88,19 +83,25 @@ def idea_update_view(request, idea_id: int):
     else:
         form = IdeaForm(instance=idea)
 
-    context = {"title": "Редагування ідеї", "form": form, "idea": idea}
-    return render(request, "ideas/idea_form.html", context=context)
+    return render(
+        request,
+        "ideas/idea_form.html",
+        {"form": form, "idea": idea, "title": "Редагування"},
+    )
 
 
+@login_required
 def idea_delete_view(request, idea_id: int):
     idea = get_object_or_404(Idea, id=idea_id)
+
+    if idea.author != request.user:
+        return HttpResponseForbidden("Ви не можете видаляти чужі ідеї.")
 
     if request.method == "POST":
         idea.delete()
         return redirect("idea_list")
 
-    context = {"title": "Видалення ідеї", "idea": idea}
-    return render(request, "ideas/idea_confirm_delete.html", context=context)
+    return render(request, "ideas/idea_confirm_delete.html", {"idea": idea})
 
 
 def category_list_view(request):
@@ -119,6 +120,7 @@ def category_detail_view(request, category_id: int):
     return render(request, "ideas/category_detail.html", context=context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def category_create_view(request):
     if request.method == "POST":
         form = CategoryForm(request.POST)
@@ -132,6 +134,7 @@ def category_create_view(request):
     return render(request, "ideas/category_form.html", context=context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def category_update_view(request, category_id: int):
     category = get_object_or_404(Category, id=category_id)
     if request.method == "POST":
@@ -146,6 +149,7 @@ def category_update_view(request, category_id: int):
     return render(request, "ideas/category_form.html", context=context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def category_delete_view(request, category_id: int):
     category = get_object_or_404(Category, id=category_id)
     if request.method == "POST":

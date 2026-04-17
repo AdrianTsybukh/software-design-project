@@ -6,9 +6,10 @@
     <body>
         <h1>Категорія: {{ category.name }}</h1>
         <p>{{ category.description }}</p>
-
-        <a href="{% url 'category_update' category.id %}">Редагувати</a> |
-        <a href="{% url 'category_delete' category.id %}">Видалити</a> |
+        {% if user.is_superuser %}
+        <a href="{% url 'category_update' category.id %}">Редагувати</a>
+        <a href="{% url 'category_delete' category.id %}">Видалити</a>
+        {% endif %}
         <a href="{% url 'category_list' %}">До списку категорій</a>
 
         <h3>Ідеї в цій категорії:</h3>

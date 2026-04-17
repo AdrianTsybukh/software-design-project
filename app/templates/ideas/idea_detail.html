@@ -26,9 +26,14 @@
             </form>
         </div>
 
-        <a href="{% url 'idea_update' idea.id %}">Редагувати ідею</a> |
-        <a href="{% url 'idea_delete' idea.id %}">Видалити ідею</a> |
-        <a href="{% url 'idea_list' %}">До списку ідей</a>
+        <div style="margin-top: 20px">
+            {% if idea.author == user %}
+            <a href="{% url 'idea_update' idea.id %}">Редагувати ідею</a>
+            <a href="{% url 'idea_delete' idea.id %}">Видалити ідею</a>
+            {% endif %}
+
+            <a href="{% url 'idea_list' %}">До списку ідей</a>
+        </div>
 
         <hr />
 

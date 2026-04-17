@@ -5,7 +5,9 @@
     </head>
     <body>
         <h1>{{ title }}</h1>
-        <a href="{% url 'category_create' %}">Створити нову категорію</a> |
+        {% if user.is_superuser %}
+        <a href="{% url 'category_create' %}">Створити нову категорію</a>
+        {% endif %}
         <a href="{% url 'idea_list' %}">До списку ідей</a>
         <hr />
         <ul>
