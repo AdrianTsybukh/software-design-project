@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1>Видалення</h1>
+        <p>Ви впевнені, що хочете видалити ідею "{{ idea.title }}"?</p>
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit">Так, видалити</button>
+            <a href="{% url 'idea_detail' idea.id %}">Скасувати</a>
+        </form>
+    </body>
+</html>

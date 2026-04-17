@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1>Категорія: {{ category.name }}</h1>
+        <p>{{ category.description }}</p>
+
+        <a href="{% url 'category_update' category.id %}">Редагувати</a> |
+        <a href="{% url 'category_delete' category.id %}">Видалити</a> |
+        <a href="{% url 'category_list' %}">До списку категорій</a>
+
+        <h3>Ідеї в цій категорії:</h3>
+        <ul>
+            {% for idea in ideas %}
+            <li>
+                <a href="{% url 'idea_detail' idea.id %}">{{ idea.title }}</a>
+            </li>
+            {% empty %}
+            <li>Поки немає ідей.</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

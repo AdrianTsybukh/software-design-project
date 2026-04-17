@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1>{{ idea.title }}</h1>
+        <p><strong>Опис:</strong> {{ idea.description }}</p>
+        <p><strong>Категорія:</strong> {{ idea.category.name }}</p>
+        <p><strong>Автор:</strong> {{ idea.author.username }}</p>
+
+        <div style="margin: 15px 0; padding: 10px; border: 1px solid #ccc">
+            <strong>Рейтинг:</strong> {{ upvotes }} | {{ downvotes }}
+            <form
+                action="{% url 'idea_vote' idea.id %}"
+                method="POST"
+                style="display: inline; margin-left: 10px"
+            >
+                {% csrf_token %}
+                <button type="submit" name="vote_value" value="1">
+                    Голосувати За
+                </button>
+                <button type="submit" name="vote_value" value="-1">
+                    Голосувати Проти
+                </button>
+            </form>
+        </div>
+
+        <a href="{% url 'idea_update' idea.id %}">Редагувати ідею</a> |
+        <a href="{% url 'idea_delete' idea.id %}">Видалити ідею</a> |
+        <a href="{% url 'idea_list' %}">До списку ідей</a>
+
+        <hr />
+
+        <h3>Обговорення</h3>
+        <ul>
+            {% for comment in comments %}
+            <li>
+                <strong>{{ comment.author.username }}</strong>
+                <small>({{ comment.created_at|date:"d.m.Y H:i" }})</small>:
+                <p>{{ comment.text }}</p>
+            </li>
+            {% empty %}
+            <li>Коментарів поки немає. Будьте першим!</li>
+            {% endfor %}
+        </ul>
+
+        <h4>Додати коментар</h4>
+        <form method="POST">
+            {% csrf_token %} {{ comment_form.as_p }}
+            <button type="submit" name="submit_comment">Відправити</button>
+        </form>
+    </body>
+</html>
